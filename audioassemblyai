@@ -1,0 +1,40 @@
+import assemblyai as aai
+import streamlit as st
+import tempfile
+
+st.title("Audio to Text POC")
+
+# upload audio file
+audio_file = st.file_uploader("Audio File", type=["wav", "mp3", "m4a"])
+
+@st.cache_resource
+def assemblyai_model():
+    model = aai.Transcriber()
+    return model
+
+aai.settings.api_key = "b73c7baac3f245b5b5647d98894b0d95"
+
+transcriber = assemblyai_model()
+st.text("Model loaded")
+
+if st.sidebar.button("Transcribe the audio"):
+    if audio_file is not None:
+        st.sidebar.success("Transcribing Audio")
+
+        with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
+            tmpfile.write(audio_file.read())
+            audio_path = tmpfile.name
+
+            # Enable speaker detection
+            transcript = transcriber.transcribe(audio_path, speaker_labels=True)
+
+        st.sidebar.success("Complete Transcription")
+        st.text_area("Transcription Output", value=transcript.text, height=300)
+
+        for utterance in transcript.utterances:
+            st.text(f"Speaker {utterance.speaker}: {utterance.text}")
+    else:
+        st.sidebar.error("Please Upload an Audio File")
+
+if __name__ == "__main__":
+    pass
