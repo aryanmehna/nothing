@@ -1,6 +1,8 @@
 import assemblyai as aai
 import streamlit as st
 import tempfile
+from docx import Document
+from io import BytesIO
 
 st.title("Audio to Text POC")
 
@@ -16,6 +18,17 @@ aai.settings.api_key = "b73c7baac3f245b5b5647d98894b0d95"
 
 transcriber = assemblyai_model()
 st.text("Model loaded")
+
+def create_docx(transcript_text, utterances):
+    doc = Document()
+    doc.add_heading("Transcription Output", level=1)
+    doc.add_paragraph(transcript_text)
+
+    doc.add_heading("Speaker Segmentation", level=2)
+    for utterance in utterances:
+        doc.add_paragraph(f"Speaker {utterance.speaker}: {utterance.text}")
+
+    return doc
 
 if st.sidebar.button("Transcribe the audio"):
     if audio_file is not None:
@@ -34,6 +47,19 @@ if st.sidebar.button("Transcribe the audio"):
         else:
             st.sidebar.success("Complete Transcription")
             st.text_area("Transcription Output", value=transcript.text, height=300)
+
+            # Create the docx file
+            doc = create_docx(transcript.text, transcript.utterances)
+            buffer = BytesIO()
+            doc.save(buffer)
+            buffer.seek(0)
+
+            st.download_button(
+                label="Download Transcription as DOCX",
+                data=buffer,
+                file_name="transcription.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
 
             for utterance in transcript.utterances:
                 st.text(f"Speaker {utterance.speaker}: {utterance.text}")
